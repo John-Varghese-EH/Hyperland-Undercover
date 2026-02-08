@@ -4,6 +4,7 @@
 
 # Hyprland Undercover 🕵️
 
+[![PPA](https://img.shields.io/badge/PPA-Launchpad-E95420?logo=ubuntu&logoColor=white)](https://launchpad.net/hyperland-undercover)
 [![AUR](https://img.shields.io/badge/AUR-Arch_Linux-1793D1?logo=archlinux&logoColor=white)](https://aur.archlinux.org/packages/hyprland-undercover)
 [![COPR](https://img.shields.io/badge/COPR-Fedora-51A2DA?logo=fedora&logoColor=white)](https://copr.fedorainfracloud.org/coprs/hyprland-undercover/)
 [![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
@@ -180,7 +181,7 @@ sudo dnf remove hyprland-undercover
 
 <div align="center">
 
-[![GNOME Undercover](https://img.shields.io/badge/GNOME_Undercover-Sister_Project-4A86CF?style=for-the-badge&logo=gnome&logoColor=white)](https://github.com/John-Varghese-EH/Gnome-Undercover)
+[![GNOME Undercover](https://img.shields.io/badge/GNOME_Undercover-Project-4A86CF?style=for-the-badge&logo=gnome&logoColor=white)](https://github.com/John-Varghese-EH/Gnome-Undercover)
 
 </div>
 
@@ -195,7 +196,20 @@ If you're using **GNOME** instead of Hyprland, check out **[GNOME-Undercover](ht
 
 ---
 
-## �🙏 Credits
+## 🎉 Fun Add-on: Activate-linux
+
+Want to take your Windows disguise to the next level?  
+Pair Gnome-Undercover with [activate-linux](https://github.com/MrGlockenspiel/activate-linux)-a hilarious open-source prank that displays the classic “Activate Windows” watermark on your Linux desktop!
+
+> **Description:**  
+> _Fool your friends, colleagues, or even yourself with a touch of Windows authenticity. **Activate-linux** is the perfect companion for your undercover adventures!_
+
+**Try it out:**  
+[github.com/MrGlockenspiel/activate-linux](https://github.com/MrGlockenspiel/activate-linux)
+
+---
+
+## 🙏 Credits
 
 This project uses:
 

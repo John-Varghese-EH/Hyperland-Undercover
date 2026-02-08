@@ -36,3 +36,4 @@ tests/test_tmp/
 # Local development
 .env
 .envrc
+/reference

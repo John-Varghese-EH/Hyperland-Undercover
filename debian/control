@@ -1,0 +1,32 @@
+Source: hyprland-undercover
+Section: utils
+Priority: optional
+Maintainer: John Varghese johnvarghese.work@gmail.com
+Build-Depends: debhelper (>= 12), python3, dh-python
+Standards-Version: 4.5.1
+Homepage: https://github.com/John-Varghese-EH/Hyprland-Undercover
+Vcs-Git: https://github.com/John-Varghese-EH/Hyprland-Undercover.git
+Vcs-Browser: https://github.com/John-Varghese-EH/Hyprland-Undercover
+
+Package: hyprland-undercover
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, 
+ bash,
+ waybar,
+ jq,
+ python3-gi,
+ gir1.2-gtk-4.0,
+ gir1.2-adw-1
+Recommends: rofi, hyprland
+Suggests: wofi, swww, hyprpaper, wlogout
+Description: Transform your Hyprland desktop into Windows 11
+ Hyprland Undercover transforms your Hyprland desktop into a convincing
+ Windows 11 environment with a single command. It includes a Windows 11-style
+ taskbar (Waybar), start menu (Rofi/Wofi), and matching themes.
+ .
+ Features:
+  - One-click transformation between native Hyprland and Windows 11 look
+  - Automatic backup and restore of original configurations
+  - Windows 11-style taskbar via Waybar
+  - Windows 11-style start menu via Rofi/Wofi
+  - GTK4/Libadwaita settings application

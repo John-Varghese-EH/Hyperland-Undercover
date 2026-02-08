@@ -1,0 +1,12 @@
+hyprland-undercover (1.0.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Features:
+    - One-click toggle between Hyprland and Windows 11 look
+    - Windows 11-style Waybar taskbar
+    - Windows 11-style Rofi/Wofi start menu
+    - GTK4/Libadwaita settings application
+    - Automatic backup and restore of configurations
+    - Multi-distro installer support
+
+ -- John Varghese <john@example.com>  Sat, 08 Feb 2026 15:00:00 +0530

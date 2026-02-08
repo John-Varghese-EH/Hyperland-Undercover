@@ -1,0 +1,26 @@
+/* Hyprland Undercover - Rofi Configuration
+ * Author: John Varghese (https://github.com/John-Varghese-EH)
+ * Instagram: @cyber__trinity
+ * License: GPL-3.0
+ */
+
+configuration {
+    modi: "drun,run,window,filebrowser";
+    show-icons: true;
+    icon-theme: "Fluent-dark";
+    display-drun: "Apps";
+    display-run: "Run";
+    display-window: "Windows";
+    display-filebrowser: "Files";
+    drun-display-format: "{name}";
+    window-format: "{w} · {c} · {t}";
+    font: "Segoe UI 12";
+    terminal: "kitty";
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+    scroll-method: 0;
+    click-to-exit: true;
+}
+
+@theme "windows11"

@@ -1,0 +1,96 @@
+/* Hyprland Undercover - Windows 11 Start Menu Theme for Wofi
+ * Author: John Varghese (https://github.com/John-Varghese-EH)
+ * Instagram: @cyber__trinity
+ * License: GPL-3.0
+ */
+
+/* ===== MAIN WINDOW ===== */
+window {
+    margin: 0px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background-color: rgba(32, 32, 32, 0.95);
+    font-family: "Segoe UI", "Inter", "Roboto", sans-serif;
+    font-size: 13px;
+}
+
+/* ===== SEARCH INPUT ===== */
+#input {
+    margin: 16px 16px 8px 16px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: rgba(45, 45, 45, 0.95);
+    color: #ffffff;
+    font-size: 14px;
+}
+
+#input:focus {
+    border: 2px solid #0078d4;
+    outline: none;
+}
+
+#input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== APP LIST CONTAINER ===== */
+#scroll {
+    margin: 8px 8px 16px 8px;
+    border: none;
+    background-color: transparent;
+}
+
+/* ===== INNER CONTAINER ===== */
+#inner-box {
+    margin: 0px 8px;
+    border: none;
+    background-color: transparent;
+}
+
+/* ===== TEXT ELEMENTS ===== */
+#text {
+    margin: 4px 0px;
+    color: #ffffff;
+    font-size: 11px;
+}
+
+/* ===== APP ENTRIES ===== */
+#entry {
+    margin: 4px;
+    padding: 16px 8px;
+    border-radius: 8px;
+    background-color: transparent;
+}
+
+#entry:selected {
+    background-color: rgba(60, 60, 60, 0.95);
+    border: 2px solid #0078d4;
+}
+
+#entry:hover {
+    background-color: rgba(50, 50, 50, 0.95);
+}
+
+/* ===== APP ICONS ===== */
+#img {
+    margin: 0px 0px 8px 0px;
+    background-color: transparent;
+}
+
+/* ===== UNSELECTED ENTRIES ===== */
+#unselected {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== SELECTED ENTRIES ===== */
+#selected {
+    color: #ffffff;
+}
+
+/* ===== OUTER BOX ===== */
+#outer-box {
+    margin: 0px;
+    border: none;
+    background-color: transparent;
+}

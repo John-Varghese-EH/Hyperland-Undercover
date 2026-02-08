@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""
+Hyprland Undercover Settings
+Author: John Varghese (https://github.com/John-Varghese-EH)
+Instagram: @cyber__trinity
+License: GPL-3.0
+"""
+
+import os
+import sys
+import subprocess
+import shutil
+from pathlib import Path
+
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Gtk, Adw, Gio, GLib
+
+SCRIPT_NAME = "hyprland-undercover"
+CONFIG_DIR = Path.home() / ".config" / "hyprland-undercover"
+STATE_FILE = CONFIG_DIR / "state"
+SETTINGS_FILE = CONFIG_DIR / "settings.conf"
+
+# Find script path
+if Path("/usr/bin/hyprland-undercover").exists():
+    SCRIPT_PATH = "/usr/bin/hyprland-undercover"
+else:
+    SCRIPT_PATH = str(Path.home() / ".local" / "bin" / "hyprland-undercover")
+
+
+def check_dependencies() -> bool:
+    """Ensure required commands are available."""
+    missing = []
+    
+    if not Path(SCRIPT_PATH).exists() and not shutil.which(SCRIPT_NAME):
+        missing.append(f"Script not found at {SCRIPT_PATH}")
+    
+    if missing:
+        print(f"Error: Missing dependencies: {', '.join(missing)}")
+        return False
+    return True
+
+
+class HyprlandUndercoverSettings(Adw.Application):
+    def __init__(self):
+        super().__init__(
+            application_id='com.johnvarghese.hyprlandundercover',
+            flags=Gio.ApplicationFlags.FLAGS_NONE
+        )
+        self.window = None
+
+    def do_activate(self):
+        if not self.window:
+            self.window = MainWindow(application=self)
+        self.window.present()
+
+
+class MainWindow(Adw.ApplicationWindow):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        
+        self.set_title("Hyprland Undercover Settings")
+        self.set_default_size(450, 400)
+        
+        # Main container
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_content(main_box)
+        
+        # Header bar
+        header = Adw.HeaderBar()
+        header.set_title_widget(Adw.WindowTitle(
+            title="Hyprland Undercover",
+            subtitle="Windows 11 Desktop Transformation"
+        ))
+        main_box.append(header)
+        
+        # Scrolled content
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        main_box.append(scrolled)
+        
+        # Content clamp for responsive width
+        clamp = Adw.Clamp()
+        clamp.set_maximum_size(600)
+        clamp.set_tightening_threshold(400)
+        scrolled.set_child(clamp)
+        
+        # Preferences page
+        preferences = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
+        preferences.set_margin_top(24)
+        preferences.set_margin_bottom(24)
+        preferences.set_margin_start(12)
+        preferences.set_margin_end(12)
+        clamp.set_child(preferences)
+        
+        # Status group
+        status_group = Adw.PreferencesGroup(title="Status")
+        preferences.append(status_group)
+        
+        # Windows mode toggle
+        self.mode_row = Adw.SwitchRow(
+            title="Windows 11 Mode",
+            subtitle="Transform your desktop appearance"
+        )
+        self.mode_row.set_active(self.check_status())
+        self.mode_row.connect("notify::active", self.on_mode_toggled)
+        status_group.add(self.mode_row)
+        
+        # Status indicator
+        self.status_row = Adw.ActionRow(
+            title="Current Status",
+            subtitle=self.get_status_text()
+        )
+        status_icon = Gtk.Image.new_from_icon_name(
+            "emblem-ok-symbolic" if self.check_status() else "window-close-symbolic"
+        )
+        self.status_row.add_suffix(status_icon)
+        status_group.add(self.status_row)
+        
+        # Settings group
+        settings_group = Adw.PreferencesGroup(title="Settings")
+        preferences.append(settings_group)
+        
+        # Theme mode selector
+        self.theme_mode_row = Adw.ComboRow(title="Theme Variant")
+        theme_model = Gtk.StringList.new(["Dark", "Light"])
+        self.theme_mode_row.set_model(theme_model)
+        self.theme_mode_row.set_selected(0)  # Default to Dark
+        self.theme_mode_row.connect("notify::selected", self.on_theme_changed)
+        settings_group.add(self.theme_mode_row)
+        
+        # Actions group
+        actions_group = Adw.PreferencesGroup(title="Actions")
+        preferences.append(actions_group)
+        
+        # Re-apply button
+        reapply_row = Adw.ActionRow(
+            title="Re-apply Settings",
+            subtitle="Refresh the current theme settings"
+        )
+        reapply_btn = Gtk.Button(label="Apply")
+        reapply_btn.set_valign(Gtk.Align.CENTER)
+        reapply_btn.add_css_class("suggested-action")
+        reapply_btn.connect("clicked", self.on_reapply_clicked)
+        reapply_row.add_suffix(reapply_btn)
+        reapply_row.set_activatable_widget(reapply_btn)
+        actions_group.add(reapply_row)
+        
+        # Open config dir button
+        config_row = Adw.ActionRow(
+            title="Open Configuration",
+            subtitle="View configuration files"
+        )
+        config_btn = Gtk.Button(label="Open")
+        config_btn.set_valign(Gtk.Align.CENTER)
+        config_btn.connect("clicked", self.on_open_config_clicked)
+        config_row.add_suffix(config_btn)
+        config_row.set_activatable_widget(config_btn)
+        actions_group.add(config_row)
+        
+        # Uninstall button
+        uninstall_row = Adw.ActionRow(
+            title="Uninstall",
+            subtitle="Remove Hyprland Undercover"
+        )
+        uninstall_btn = Gtk.Button(label="Uninstall")
+        uninstall_btn.set_valign(Gtk.Align.CENTER)
+        uninstall_btn.add_css_class("destructive-action")
+        uninstall_btn.connect("clicked", self.on_uninstall_clicked)
+        uninstall_row.add_suffix(uninstall_btn)
+        uninstall_row.set_activatable_widget(uninstall_btn)
+        actions_group.add(uninstall_row)
+        
+        # About group
+        about_group = Adw.PreferencesGroup(title="About")
+        preferences.append(about_group)
+        
+        about_row = Adw.ActionRow(
+            title="Hyprland Undercover",
+            subtitle="Created by John Varghese\nGitHub: @John-Varghese-EH | Instagram: @cyber__trinity"
+        )
+        about_row.set_subtitle_lines(2)
+        about_group.add(about_row)
+
+    def check_status(self) -> bool:
+        """Check if Windows mode is currently active."""
+        return STATE_FILE.exists()
+
+    def get_status_text(self) -> str:
+        """Get human-readable status text."""
+        if self.check_status():
+            return "Windows 11 mode is active"
+        return "Native Hyprland mode"
+
+    def update_status_display(self):
+        """Update the status indicator."""
+        is_active = self.check_status()
+        self.status_row.set_subtitle(self.get_status_text())
+
+    def on_mode_toggled(self, switch, param):
+        """Handle mode toggle."""
+        is_active = switch.get_active()
+        current_status = self.check_status()
+        
+        if is_active != current_status:
+            self.run_script()
+            # Give it a moment to complete
+            GLib.timeout_add(500, self.update_status_display)
+
+    def on_theme_changed(self, combo, param):
+        """Handle theme variant change."""
+        selected = combo.get_selected()
+        theme_mode = "dark" if selected == 0 else "light"
+        
+        # Update settings file
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        with open(SETTINGS_FILE, 'w') as f:
+            f.write(f'THEME_MODE="{theme_mode}"\n')
+
+    def on_reapply_clicked(self, button):
+        """Re-apply current settings."""
+        if self.check_status():
+            # Disable and re-enable to force refresh
+            subprocess.Popen([SCRIPT_PATH, "--disable"])
+            GLib.timeout_add(1000, lambda: subprocess.Popen([SCRIPT_PATH, "--enable"]))
+        else:
+            print("Enable Windows mode first.")
+
+    def on_open_config_clicked(self, button):
+        """Open the configuration directory."""
+        config_path = str(CONFIG_DIR)
+        try:
+            subprocess.Popen(["xdg-open", config_path])
+        except Exception as e:
+            print(f"Error opening config directory: {e}")
+
+    def on_uninstall_clicked(self, button):
+        """Show uninstall confirmation dialog."""
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading="Uninstall Hyprland Undercover?",
+            body="This will restore your original settings and remove all installed components."
+        )
+        dialog.add_response("cancel", "Cancel")
+        dialog.add_response("uninstall", "Uninstall")
+        dialog.set_response_appearance("uninstall", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self.on_uninstall_response)
+        dialog.present()
+
+    def on_uninstall_response(self, dialog, response):
+        """Handle uninstall dialog response."""
+        if response == "uninstall":
+            # First restore original settings if in Windows mode
+            if self.check_status():
+                subprocess.run([SCRIPT_PATH, "--disable"])
+            
+            # Show message about running uninstall script
+            info_dialog = Adw.MessageDialog(
+                transient_for=self,
+                heading="Run Uninstall Script",
+                body="Please run the uninstall script from your terminal:\n\n./uninstall.sh"
+            )
+            info_dialog.add_response("ok", "OK")
+            info_dialog.present()
+
+    def run_script(self):
+        """Run the toggle script."""
+        try:
+            subprocess.Popen([SCRIPT_PATH])
+        except Exception as e:
+            print(f"Error running script: {e}")
+
+
+def main():
+    if not check_dependencies():
+        # Create minimal error window
+        app = Gtk.Application(application_id='com.johnvarghese.hyprlandundercover.error')
+        
+        def on_activate(app):
+            dialog = Adw.MessageDialog(
+                heading="Error",
+                body="Hyprland Undercover is not properly installed.\nPlease run the setup script first."
+            )
+            dialog.add_response("ok", "OK")
+            dialog.connect("response", lambda d, r: app.quit())
+            dialog.present()
+        
+        app.connect('activate', on_activate)
+        app.run(sys.argv)
+        return 1
+    
+    app = HyprlandUndercoverSettings()
+    return app.run(sys.argv)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

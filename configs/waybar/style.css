@@ -1,0 +1,254 @@
+/* Hyprland Undercover - Windows 11 Waybar Theme
+ * Author: John Varghese (https://github.com/John-Varghese-EH)
+ * Instagram: @cyber__trinity
+ * License: GPL-3.0
+ */
+
+/* ===== GLOBAL STYLES ===== */
+* {
+    font-family: "Segoe UI", "Inter", "Roboto", "Noto Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* ===== MAIN BAR ===== */
+window#waybar {
+    background: rgba(32, 32, 32, 0.85);
+    border: none;
+    border-radius: 0;
+}
+
+window#waybar.hidden {
+    opacity: 0.2;
+}
+
+/* ===== TOOLTIP ===== */
+tooltip {
+    background: rgba(40, 40, 40, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+tooltip label {
+    color: #ffffff;
+}
+
+/* ===== START BUTTON ===== */
+#custom-start {
+    background: transparent;
+    color: #0078d4;
+    font-size: 18px;
+    padding: 0 16px;
+    margin: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#custom-start:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#custom-start:active {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* ===== WORKSPACES ===== */
+#workspaces {
+    background: transparent;
+    margin: 4px 0;
+    padding: 0 4px;
+}
+
+#workspaces button {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4px 12px;
+    margin: 0 2px;
+    border-radius: 4px;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+#workspaces button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+#workspaces button.active {
+    background: rgba(0, 120, 212, 0.3);
+    color: #ffffff;
+    border-bottom: 3px solid #0078d4;
+    border-radius: 4px 4px 0 0;
+}
+
+#workspaces button.urgent {
+    background: rgba(255, 85, 85, 0.3);
+    color: #ff5555;
+}
+
+/* ===== TASKBAR ===== */
+#taskbar {
+    background: transparent;
+    margin: 4px 0;
+    padding: 0 8px;
+}
+
+#taskbar button {
+    background: transparent;
+    padding: 4px 8px;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#taskbar button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#taskbar button.active {
+    background: rgba(0, 120, 212, 0.2);
+    border-bottom: 3px solid #0078d4;
+    border-radius: 4px 4px 0 0;
+}
+
+/* ===== TRAY ===== */
+#tray {
+    background: transparent;
+    padding: 0 8px;
+    margin: 4px 0;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: rgba(255, 85, 85, 0.3);
+    border-radius: 4px;
+}
+
+#tray menu {
+    background: rgba(40, 40, 40, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+#tray menu menuitem {
+    padding: 6px 12px;
+}
+
+#tray menu menuitem:hover {
+    background: rgba(0, 120, 212, 0.3);
+}
+
+/* ===== CLOCK ===== */
+#clock {
+    background: transparent;
+    color: #ffffff;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#clock:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== BATTERY ===== */
+#battery {
+    background: transparent;
+    color: #ffffff;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#battery:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#battery.charging {
+    color: #50fa7b;
+}
+
+#battery.warning:not(.charging) {
+    color: #f1fa8c;
+}
+
+#battery.critical:not(.charging) {
+    color: #ff5555;
+    animation: blink 1s linear infinite;
+}
+
+@keyframes blink {
+    to {
+        color: #ffffff;
+    }
+}
+
+/* ===== NETWORK ===== */
+#network {
+    background: transparent;
+    color: #ffffff;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#network:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#network.disconnected {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== PULSEAUDIO ===== */
+#pulseaudio {
+    background: transparent;
+    color: #ffffff;
+    padding: 0 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#pulseaudio:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#pulseaudio.muted {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== POWER BUTTON ===== */
+#custom-power {
+    background: transparent;
+    color: #ffffff;
+    padding: 0 16px;
+    margin: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#custom-power:hover {
+    background: rgba(255, 85, 85, 0.3);
+    color: #ff5555;
+}
+
+/* ===== RIGHT MODULES SEPARATOR ===== */
+.modules-right > widget:first-child > #tray {
+    margin-left: 8px;
+}
+
+.modules-right > widget:last-child > #custom-power {
+    margin-right: 4px;
+}

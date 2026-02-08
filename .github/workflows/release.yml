@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-packages:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts build-essential debhelper dh-python python3-all fakeroot
+
+      - name: Build Debian package
+        run: |
+          tar --exclude='.git' --exclude='debian' -czf ../hyprland-undercover_1.0.0.orig.tar.gz .
+          dpkg-buildpackage -us -uc -b
+
+      - name: Create source tarball
+        run: |
+          VERSION=${{ github.event.inputs.version || github.ref_name }}
+          VERSION=${VERSION#v}
+          tar --exclude='.git' -czf hyprland-undercover-${VERSION}.tar.gz .
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: release-packages
+          path: |
+            ../*.deb
+            *.tar.gz
+
+  create-release:
+    needs: build-packages
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-packages
+          path: packages
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=${{ github.event.inputs.version || github.ref_name }}
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          name: Hyprland Undercover v${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name || format('v{0}', github.event.inputs.version) }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            packages/*.deb
+            packages/*.tar.gz
+          body: |
+            ## Hyprland Undercover v${{ steps.version.outputs.version }}
+            
+            Transform your Hyprland desktop into a convincing Windows 11 environment!
+            
+            ### Installation
+            
+            **Arch Linux (AUR):**
+            ```bash
+            yay -S hyprland-undercover
+            ```
+            
+            **Debian/Ubuntu:**
+            ```bash
+            sudo dpkg -i hyprland-undercover_*.deb
+            sudo apt install -f
+            ```
+            
+            **From Source:**
+            ```bash
+            git clone https://github.com/John-Varghese-EH/Hyprland-Undercover.git
+            cd Hyprland-Undercover
+            ./scripts/hyprland-undercover-setup
+            ```
+            
+            ### Usage
+            Run `hyprland-undercover` to toggle between Windows 11 mode and your native Hyprland desktop.

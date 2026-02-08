@@ -1,0 +1,61 @@
+name: Build Debian Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'configs/**'
+      - 'assets/**'
+      - 'debian/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts build-essential debhelper dh-python python3-all python3-setuptools fakeroot
+
+      - name: Build Debian package
+        run: |
+          # Create source tarball
+          tar --exclude='.git' --exclude='debian' -czf ../hyprland-undercover_1.0.0.orig.tar.gz .
+          
+          # Build package
+          dpkg-buildpackage -us -uc -b
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: debian-package
+          path: ../*.deb
+          retention-days: 30
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on scripts
+        run: |
+          shellcheck scripts/hyprland-undercover || true
+          shellcheck scripts/hyprland-undercover-setup || true
+          shellcheck uninstall.sh || true
+
+      - name: Check Python syntax
+        run: |
+          python3 -m py_compile scripts/hyprland-undercover-settings

@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3
+
+override_dh_auto_install:
+	# Install scripts
+	install -D -m 755 scripts/hyprland-undercover $(CURDIR)/debian/hyprland-undercover/usr/bin/hyprland-undercover
+	install -D -m 755 scripts/hyprland-undercover-setup $(CURDIR)/debian/hyprland-undercover/usr/bin/hyprland-undercover-setup
+	install -D -m 755 scripts/hyprland-undercover-settings $(CURDIR)/debian/hyprland-undercover/usr/bin/hyprland-undercover-settings
+	
+	# Install data files
+	mkdir -p $(CURDIR)/debian/hyprland-undercover/usr/share/hyprland-undercover
+	cp -r configs $(CURDIR)/debian/hyprland-undercover/usr/share/hyprland-undercover/
+	cp -r assets $(CURDIR)/debian/hyprland-undercover/usr/share/hyprland-undercover/
+	
+	# Install desktop files
+	install -D -m 644 assets/hyprland-undercover.desktop $(CURDIR)/debian/hyprland-undercover/usr/share/applications/hyprland-undercover.desktop
+	
+	# Install icons
+	install -D -m 644 assets/start-icon.svg $(CURDIR)/debian/hyprland-undercover/usr/share/icons/hicolor/scalable/apps/hyprland-undercover.svg
+
+override_dh_auto_build:
+	# Nothing to build
+
+override_dh_auto_test:
+	# Skip tests during build

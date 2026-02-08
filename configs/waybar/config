@@ -1,0 +1,121 @@
+{
+    "layer": "top",
+    "position": "bottom",
+    "height": 48,
+    "spacing": 0,
+    "margin-top": 0,
+    "margin-bottom": 0,
+    "margin-left": 0,
+    "margin-right": 0,
+    "modules-left": ["custom/start", "wlr/taskbar"],
+    "modules-center": ["hyprland/workspaces"],
+    "modules-right": ["tray", "pulseaudio", "network", "battery", "clock", "custom/power"],
+    
+    "custom/start": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "rofi -show drun || wofi --show drun"
+    },
+    
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "1": "󰍹",
+            "2": "󰈹",
+            "3": "󰝚",
+            "4": "󰭹",
+            "5": "󰊢",
+            "6": "󰙯",
+            "7": "󰓓",
+            "8": "󱎓",
+            "9": "󰘐",
+            "10": "󰊠",
+            "urgent": "",
+            "active": "",
+            "default": ""
+        },
+        "on-click": "activate",
+        "all-outputs": true,
+        "persistent-workspaces": {
+            "*": 5
+        }
+    },
+    
+    "wlr/taskbar": {
+        "format": "{icon}",
+        "icon-size": 20,
+        "icon-theme": "Fluent-dark",
+        "tooltip-format": "{title}",
+        "on-click": "activate",
+        "on-click-middle": "close",
+        "ignore-list": [],
+        "rewrite": {}
+    },
+    
+    "tray": {
+        "icon-size": 16,
+        "spacing": 8,
+        "show-passive-items": true
+    },
+    
+    "clock": {
+        "format": "{:%I:%M %p}",
+        "format-alt": "{:%A, %B %d, %Y}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#ffead3'><b>{}</b></span>",
+                "days": "<span color='#ecc6d9'><b>{}</b></span>",
+                "weeks": "<span color='#99ffdd'><b>W{}</b></span>",
+                "weekdays": "<span color='#ffcc66'><b>{}</b></span>",
+                "today": "<span color='#0078d4'><b><u>{}</u></b></span>"
+            }
+        }
+    },
+    
+    "battery": {
+        "states": {
+            "warning": 30,
+            "critical": 15
+        },
+        "format": "{icon}  {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󰚥 {capacity}%",
+        "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "tooltip-format": "{timeTo}"
+    },
+    
+    "network": {
+        "format-wifi": "󰖩 {signalStrength}%",
+        "format-ethernet": "󰈀 {ifname}",
+        "format-linked": "󰈀 {ifname}",
+        "format-disconnected": "󰖪 Disconnected",
+        "tooltip-format": "{essid} ({signalStrength}%)\n{ifname}: {ipaddr}/{cidr}",
+        "on-click": "nm-connection-editor"
+    },
+    
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-bluetooth": "󰂯 {volume}%",
+        "format-muted": "󰝟",
+        "format-icons": {
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "phone": "󰏲",
+            "portable": "󰏲",
+            "car": "󰄋",
+            "default": ["󰕿", "󰖀", "󰕾"]
+        },
+        "on-click": "pavucontrol",
+        "on-click-right": "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+    },
+    
+    "custom/power": {
+        "format": "⏻",
+        "tooltip": false,
+        "on-click": "wlogout || rofi -show power-menu -modi power-menu:rofi-power-menu"
+    }
+}

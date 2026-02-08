@@ -1,0 +1,360 @@
+#!/bin/bash
+# Hyprland Undercover - Transform your Hyprland desktop into Windows 11
+# Author: John Varghese (https://github.com/John-Varghese-EH)
+# Instagram: @cyber__trinity
+# License: GPL-3.0
+
+set -euo pipefail
+
+# Configuration
+CONFIG_DIR="$HOME/.config/hyprland-undercover"
+STATE_FILE="$CONFIG_DIR/state"
+BACKUP_DIR="$CONFIG_DIR/backup"
+SETTINGS_FILE="$CONFIG_DIR/settings.conf"
+
+# Default theme settings
+: "${THEME_MODE:="dark"}"
+
+# Theme names
+WINDOWS_GTK_THEME="Fluent-round-Dark"
+WINDOWS_ICON_THEME="Fluent-dark"
+WINDOWS_CURSOR_THEME="Bibata-Modern-Ice"
+
+# Paths
+if [[ -d "/usr/share/hyprland-undercover" ]]; then
+    SOURCE_ROOT="/usr/share/hyprland-undercover"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SOURCE_ROOT="$(dirname "$SCRIPT_DIR")"
+fi
+
+WALLPAPER_PATH=""
+if [[ -f "/usr/share/backgrounds/hyprland-undercover/wallpaper.png" ]]; then
+    WALLPAPER_PATH="/usr/share/backgrounds/hyprland-undercover/wallpaper.png"
+elif [[ -f "$HOME/.local/share/backgrounds/hyprland-undercover/wallpaper.png" ]]; then
+    WALLPAPER_PATH="$HOME/.local/share/backgrounds/hyprland-undercover/wallpaper.png"
+elif [[ -f "$SOURCE_ROOT/assets/wallpaper.png" ]]; then
+    WALLPAPER_PATH="$SOURCE_ROOT/assets/wallpaper.png"
+fi
+
+# Ensure config directory exists
+mkdir -p "$CONFIG_DIR"
+mkdir -p "$BACKUP_DIR"
+
+# Load user settings if available
+if [[ -f "$SETTINGS_FILE" ]]; then
+    # shellcheck source=/dev/null
+    source "$SETTINGS_FILE"
+fi
+
+# Helper functions
+msg() {
+    echo "✔  $1"
+}
+
+error() {
+    echo "✖  $1" >&2
+    exit 1
+}
+
+warn() {
+    echo "⚠  $1" >&2
+}
+
+# Detect which launcher is installed (rofi or wofi)
+detect_launcher() {
+    if command -v rofi &>/dev/null; then
+        echo "rofi"
+    elif command -v wofi &>/dev/null; then
+        echo "wofi"
+    else
+        echo "none"
+    fi
+}
+
+# Backup original configurations
+backup_original_configs() {
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_subdir="$BACKUP_DIR/$timestamp"
+    
+    # Only backup if we haven't already
+    if [[ -f "$BACKUP_DIR/.backed_up" ]]; then
+        msg "Backup already exists, skipping..."
+        return
+    fi
+    
+    msg "Backing up original configurations..."
+    mkdir -p "$backup_subdir"
+    
+    # Backup Hyprland config
+    if [[ -f "$HOME/.config/hypr/hyprland.conf" ]]; then
+        cp "$HOME/.config/hypr/hyprland.conf" "$backup_subdir/hyprland.conf"
+        msg "Backed up hyprland.conf"
+    fi
+    
+    # Backup Waybar configs
+    if [[ -d "$HOME/.config/waybar" ]]; then
+        mkdir -p "$backup_subdir/waybar"
+        cp -r "$HOME/.config/waybar"/* "$backup_subdir/waybar/" 2>/dev/null || true
+        msg "Backed up waybar configs"
+    fi
+    
+    # Backup Rofi configs
+    if [[ -d "$HOME/.config/rofi" ]]; then
+        mkdir -p "$backup_subdir/rofi"
+        cp -r "$HOME/.config/rofi"/* "$backup_subdir/rofi/" 2>/dev/null || true
+        msg "Backed up rofi configs"
+    fi
+    
+    # Backup Wofi configs
+    if [[ -d "$HOME/.config/wofi" ]]; then
+        mkdir -p "$backup_subdir/wofi"
+        cp -r "$HOME/.config/wofi"/* "$backup_subdir/wofi/" 2>/dev/null || true
+        msg "Backed up wofi configs"
+    fi
+    
+    # Backup GTK settings
+    {
+        echo "ORIGINAL_GTK_THEME='$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null || echo "")'"
+        echo "ORIGINAL_ICON_THEME='$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null || echo "")'"
+        echo "ORIGINAL_CURSOR_THEME='$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null || echo "")'"
+    } > "$backup_subdir/gtk_settings.conf"
+    
+    # Mark as backed up and record the latest backup directory
+    echo "$backup_subdir" > "$BACKUP_DIR/.backed_up"
+    msg "Backup complete: $backup_subdir"
+}
+
+# Get the latest backup directory
+get_latest_backup() {
+    if [[ -f "$BACKUP_DIR/.backed_up" ]]; then
+        cat "$BACKUP_DIR/.backed_up"
+    else
+        echo ""
+    fi
+}
+
+# Apply Windows 11 mode
+switch_to_windows() {
+    msg "Switching to Windows 11 mode..."
+    
+    local launcher
+    launcher=$(detect_launcher)
+    
+    # Apply Hyprland Windows mode config
+    if [[ -f "$SOURCE_ROOT/configs/hypr/windows-mode.conf" ]]; then
+        # Create a source line in hyprland.conf if not exists
+        local hypr_conf="$HOME/.config/hypr/hyprland.conf"
+        local source_line="source = ~/.config/hyprland-undercover/windows-mode.conf"
+        
+        # Copy windows-mode.conf to config dir
+        cp "$SOURCE_ROOT/configs/hypr/windows-mode.conf" "$CONFIG_DIR/windows-mode.conf"
+        
+        # Add source line to hyprland.conf if not already present
+        if ! grep -qF "hyprland-undercover/windows-mode.conf" "$hypr_conf" 2>/dev/null; then
+            echo -e "\n# Hyprland Undercover - Windows Mode\n$source_line" >> "$hypr_conf"
+        fi
+        
+        msg "Applied Hyprland Windows mode config"
+    fi
+    
+    # Apply Waybar Windows 11 config
+    if [[ -f "$SOURCE_ROOT/configs/waybar/config" ]]; then
+        mkdir -p "$HOME/.config/waybar"
+        cp "$SOURCE_ROOT/configs/waybar/config" "$HOME/.config/waybar/config"
+        cp "$SOURCE_ROOT/configs/waybar/style.css" "$HOME/.config/waybar/style.css"
+        
+        # Restart Waybar
+        killall waybar 2>/dev/null || true
+        waybar &>/dev/null &
+        disown
+        msg "Applied Waybar Windows 11 config"
+    fi
+    
+    # Apply launcher config (Rofi or Wofi)
+    if [[ "$launcher" == "rofi" ]] && [[ -d "$SOURCE_ROOT/configs/rofi" ]]; then
+        mkdir -p "$HOME/.config/rofi"
+        cp "$SOURCE_ROOT/configs/rofi/config.rasi" "$HOME/.config/rofi/config.rasi"
+        cp "$SOURCE_ROOT/configs/rofi/windows11.rasi" "$HOME/.config/rofi/windows11.rasi"
+        msg "Applied Rofi Windows 11 config"
+    elif [[ "$launcher" == "wofi" ]] && [[ -d "$SOURCE_ROOT/configs/wofi" ]]; then
+        mkdir -p "$HOME/.config/wofi"
+        cp "$SOURCE_ROOT/configs/wofi/config" "$HOME/.config/wofi/config"
+        cp "$SOURCE_ROOT/configs/wofi/style.css" "$HOME/.config/wofi/style.css"
+        msg "Applied Wofi Windows 11 config"
+    fi
+    
+    # Apply GTK theme
+    if command -v gsettings &>/dev/null; then
+        gsettings set org.gnome.desktop.interface gtk-theme "$WINDOWS_GTK_THEME" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface icon-theme "$WINDOWS_ICON_THEME" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface cursor-theme "$WINDOWS_CURSOR_THEME" 2>/dev/null || true
+        msg "Applied GTK themes"
+    fi
+    
+    # Apply wallpaper using hyprctl (hyprpaper or swww)
+    if [[ -n "$WALLPAPER_PATH" ]]; then
+        if command -v hyprctl &>/dev/null; then
+            # Try swww first (more common)
+            if command -v swww &>/dev/null; then
+                swww img "$WALLPAPER_PATH" --transition-type fade 2>/dev/null || true
+                msg "Applied wallpaper via swww"
+            # Fall back to hyprpaper
+            elif command -v hyprpaper &>/dev/null; then
+                hyprctl hyprpaper preload "$WALLPAPER_PATH" 2>/dev/null || true
+                hyprctl hyprpaper wallpaper ",$WALLPAPER_PATH" 2>/dev/null || true
+                msg "Applied wallpaper via hyprpaper"
+            fi
+        fi
+    fi
+    
+    # Reload Hyprland config
+    hyprctl reload 2>/dev/null || true
+    
+    # Create state file to indicate Windows mode is active
+    touch "$STATE_FILE"
+    msg "Windows 11 mode activated!"
+}
+
+# Restore original GNOME/Hyprland settings
+switch_to_hyprland() {
+    msg "Switching back to original Hyprland theme..."
+    
+    local backup_path
+    backup_path=$(get_latest_backup)
+    
+    if [[ -z "$backup_path" ]] || [[ ! -d "$backup_path" ]]; then
+        warn "No backup found. Cannot restore original settings."
+        rm -f "$STATE_FILE"
+        return
+    fi
+    
+    # Restore Hyprland config (remove the source line)
+    local hypr_conf="$HOME/.config/hypr/hyprland.conf"
+    if [[ -f "$hypr_conf" ]]; then
+        # Remove the Windows mode source line
+        sed -i '/# Hyprland Undercover - Windows Mode/d' "$hypr_conf"
+        sed -i '/hyprland-undercover\/windows-mode.conf/d' "$hypr_conf"
+        msg "Removed Windows mode from hyprland.conf"
+    fi
+    
+    # Remove Windows mode config
+    rm -f "$CONFIG_DIR/windows-mode.conf"
+    
+    # Restore Waybar configs
+    if [[ -d "$backup_path/waybar" ]]; then
+        mkdir -p "$HOME/.config/waybar"
+        cp -r "$backup_path/waybar"/* "$HOME/.config/waybar/" 2>/dev/null || true
+        
+        # Restart Waybar
+        killall waybar 2>/dev/null || true
+        waybar &>/dev/null &
+        disown
+        msg "Restored Waybar configs"
+    fi
+    
+    # Restore Rofi configs
+    if [[ -d "$backup_path/rofi" ]]; then
+        mkdir -p "$HOME/.config/rofi"
+        cp -r "$backup_path/rofi"/* "$HOME/.config/rofi/" 2>/dev/null || true
+        msg "Restored Rofi configs"
+    fi
+    
+    # Restore Wofi configs
+    if [[ -d "$backup_path/wofi" ]]; then
+        mkdir -p "$HOME/.config/wofi"
+        cp -r "$backup_path/wofi"/* "$HOME/.config/wofi/" 2>/dev/null || true
+        msg "Restored Wofi configs"
+    fi
+    
+    # Restore GTK settings
+    if [[ -f "$backup_path/gtk_settings.conf" ]]; then
+        # shellcheck source=/dev/null
+        source "$backup_path/gtk_settings.conf"
+        if command -v gsettings &>/dev/null; then
+            # Remove quotes from gsettings output
+            local gtk_theme icon_theme cursor_theme
+            gtk_theme=$(echo "$ORIGINAL_GTK_THEME" | tr -d "'")
+            icon_theme=$(echo "$ORIGINAL_ICON_THEME" | tr -d "'")
+            cursor_theme=$(echo "$ORIGINAL_CURSOR_THEME" | tr -d "'")
+            
+            [[ -n "$gtk_theme" ]] && gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" 2>/dev/null || true
+            [[ -n "$icon_theme" ]] && gsettings set org.gnome.desktop.interface icon-theme "$icon_theme" 2>/dev/null || true
+            [[ -n "$cursor_theme" ]] && gsettings set org.gnome.desktop.interface cursor-theme "$cursor_theme" 2>/dev/null || true
+            msg "Restored GTK themes"
+        fi
+    fi
+    
+    # Reload Hyprland config
+    hyprctl reload 2>/dev/null || true
+    
+    # Remove state file
+    rm -f "$STATE_FILE"
+    msg "Original Hyprland theme restored!"
+}
+
+# --- Main Logic ---
+
+# Parse arguments
+ACTION=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --enable|enable)
+            ACTION="enable"
+            shift
+            ;;
+        --disable|disable)
+            ACTION="disable"
+            shift
+            ;;
+        --status|status)
+            if [[ -f "$STATE_FILE" ]]; then
+                echo "Windows 11 mode is ACTIVE"
+                exit 0
+            else
+                echo "Windows 11 mode is INACTIVE"
+                exit 0
+            fi
+            ;;
+        --help|-h)
+            echo "Hyprland Undercover - Transform your Hyprland desktop into Windows 11"
+            echo ""
+            echo "Usage: hyprland-undercover [OPTION]"
+            echo ""
+            echo "Options:"
+            echo "  --enable     Enable Windows 11 mode"
+            echo "  --disable    Disable Windows 11 mode and restore original"
+            echo "  --status     Show current mode status"
+            echo "  --help       Show this help message"
+            echo ""
+            echo "Without options, toggles between modes."
+            exit 0
+            ;;
+        *)
+            warn "Unknown option: $1"
+            shift
+            ;;
+    esac
+done
+
+# First, ensure original settings are saved if this is the first run
+backup_original_configs
+
+# Determine action
+if [[ -n "$ACTION" ]]; then
+    if [[ "$ACTION" == "enable" ]]; then
+        switch_to_windows
+    else
+        switch_to_hyprland
+    fi
+else
+    # Toggle between states
+    if [[ -f "$STATE_FILE" ]]; then
+        # Currently in Windows mode, switch back to Hyprland
+        switch_to_hyprland
+    else
+        # Currently in Hyprland mode, switch to Windows
+        switch_to_windows
+    fi
+fi

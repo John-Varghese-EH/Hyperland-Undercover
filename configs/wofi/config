@@ -1,0 +1,28 @@
+# Hyprland Undercover - Wofi Configuration
+# Author: John Varghese (https://github.com/John-Varghese-EH)
+# Instagram: @cyber__trinity
+# License: GPL-3.0
+
+# General
+show=drun
+prompt=Type here to search
+width=680
+height=600
+location=center
+orientation=vertical
+halign=fill
+line_wrap=off
+dynamic_lines=false
+
+# Appearance
+allow_markup=true
+allow_images=true
+image_size=48
+columns=5
+
+# Behavior
+hide_scroll=true
+no_actions=false
+sort_order=default
+insensitive=true
+filter_rate=100

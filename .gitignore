@@ -1,0 +1,38 @@
+# Backup files
+*.bak
+*~
+
+# Build artifacts
+*.deb
+*.rpm
+*.pkg.tar.zst
+*.tar.gz
+
+# Temporary files
+/tmp/
+*.tmp
+*.swp
+
+# IDE/Editor
+.vscode/
+.idea/
+*.sublime-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test outputs
+tests/test_tmp/
+
+# Local development
+.env
+.envrc

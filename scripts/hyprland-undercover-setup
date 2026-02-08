@@ -1,0 +1,284 @@
+#!/bin/bash
+# Hyprland Undercover Installer
+# Author: John Varghese (https://github.com/John-Varghese-EH)
+# Instagram: @cyber__trinity
+# License: GPL-3.0
+
+set -euo pipefail
+
+# --- Configuration ---
+SCRIPT_NAME="Hyprland Undercover Installer"
+TEMP_DIR="/tmp/hyprland-undercover-build"
+THEME_DIR_USER="$HOME/.themes"
+ICONS_DIR_USER="$HOME/.icons"
+SCRIPTS_DIR_USER="$HOME/.local/bin"
+CONFIG_DIR_USER="$HOME/.config/hyprland-undercover"
+APPLICATIONS_DIR_USER="$HOME/.local/share/applications"
+BACKGROUNDS_DIR_USER="$HOME/.local/share/backgrounds/hyprland-undercover"
+
+# Theme and icon repositories
+FLUENT_GTK_THEME_REPO="https://github.com/vinceliuice/Fluent-gtk-theme.git"
+FLUENT_ICON_THEME_REPO="https://github.com/vinceliuice/Fluent-icon-theme.git"
+BIBATA_CURSOR_URL="https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.6/Bibata-Modern-Ice.tar.xz"
+
+# Detect source directory
+if [[ -d "/usr/share/hyprland-undercover" ]]; then
+    SOURCE_ROOT="/usr/share/hyprland-undercover"
+    IS_SYSTEM_INSTALL=true
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SOURCE_ROOT="$(dirname "$SCRIPT_DIR")"
+    IS_SYSTEM_INSTALL=false
+fi
+
+# --- Helper Functions ---
+
+msg() {
+    echo "✔  $1"
+}
+
+error() {
+    echo "✖  $1" >&2
+    exit 1
+}
+
+warn() {
+    echo "⚠  $1" >&2
+}
+
+command_exists() {
+    command -v "$1" &>/dev/null
+}
+
+# Safely clone or update a repo
+git_clone_or_update() {
+    local repo_url="$1"
+    local dest_dir="$2"
+    
+    if [[ -d "$dest_dir" ]]; then
+        msg "Directory $dest_dir already exists. Skipping clone..."
+    else
+        git clone --depth 1 "$repo_url" "$dest_dir"
+    fi
+}
+
+# --- Installation Functions ---
+
+# 1. Install Dependencies
+install_dependencies() {
+    msg "Checking and installing dependencies..."
+    
+    if command_exists apt; then
+        sudo apt update
+        sudo apt install -y git waybar rofi jq sassc libglib2.0-dev make gettext \
+            fonts-font-awesome python3-gi gir1.2-gtk-4.0 curl wget
+    elif command_exists pacman; then
+        sudo pacman -Syu --noconfirm --needed git waybar rofi jq sassc glib2 make gettext \
+            ttf-font-awesome python-gobject gtk4 curl wget
+    elif command_exists dnf; then
+        sudo dnf install -y git waybar rofi jq sassc glib2-devel make gettext \
+            fontawesome-fonts python3-gobject gtk4 curl wget
+    elif command_exists zypper; then
+        sudo zypper install -y git waybar rofi jq sassc glib2-devel make gettext \
+            fontawesome-fonts python3-gobject gtk4 curl wget
+    else
+        warn "Unsupported package manager. Please install dependencies manually:"
+        warn "git, waybar, rofi (or wofi), jq, sassc, python3-gi, gtk4"
+    fi
+    
+    msg "Dependencies installed."
+}
+
+# 2. Install Themes
+install_themes() {
+    msg "Creating temporary directory for theme installation..."
+    rm -rf "$TEMP_DIR"
+    mkdir -p "$TEMP_DIR"
+    cd "$TEMP_DIR"
+    
+    # Create theme directories
+    mkdir -p "$THEME_DIR_USER"
+    mkdir -p "$ICONS_DIR_USER"
+    
+    # Install Fluent GTK Theme
+    msg "Installing Fluent GTK theme..."
+    git_clone_or_update "$FLUENT_GTK_THEME_REPO" "Fluent-gtk-theme"
+    (
+        cd Fluent-gtk-theme
+        ./install.sh --tweaks round -c dark --dest "$THEME_DIR_USER" || true
+    )
+    
+    # Install Fluent Icon Theme
+    msg "Installing Fluent icon theme..."
+    git_clone_or_update "$FLUENT_ICON_THEME_REPO" "Fluent-icon-theme"
+    (
+        cd Fluent-icon-theme
+        ./install.sh --dest "$ICONS_DIR_USER" || true
+    )
+    
+    # Install Bibata Cursor Theme
+    msg "Installing Bibata cursor theme..."
+    if [[ ! -d "$ICONS_DIR_USER/Bibata-Modern-Ice" ]]; then
+        curl -L "$BIBATA_CURSOR_URL" -o bibata.tar.xz
+        tar -xf bibata.tar.xz -C "$ICONS_DIR_USER/"
+    fi
+    
+    msg "Themes and icons installed."
+}
+
+# 3. Install Wallpaper
+install_wallpaper() {
+    msg "Installing wallpaper..."
+    mkdir -p "$BACKGROUNDS_DIR_USER"
+    
+    # Copy wallpaper from source or download
+    if [[ -f "$SOURCE_ROOT/assets/wallpaper.png" ]]; then
+        cp "$SOURCE_ROOT/assets/wallpaper.png" "$BACKGROUNDS_DIR_USER/wallpaper.png"
+    elif [[ -f "$TEMP_DIR/Fluent-gtk-theme/wallpaper/fluent-wallpaper-dark.png" ]]; then
+        cp "$TEMP_DIR/Fluent-gtk-theme/wallpaper/fluent-wallpaper-dark.png" "$BACKGROUNDS_DIR_USER/wallpaper.png"
+    else
+        warn "No wallpaper found. You can add one manually to $BACKGROUNDS_DIR_USER/wallpaper.png"
+    fi
+    
+    msg "Wallpaper installed."
+}
+
+# 4. Install Core Files
+install_core_files() {
+    msg "Installing core scripts and files..."
+    
+    # Create directories
+    mkdir -p "$SCRIPTS_DIR_USER"
+    mkdir -p "$CONFIG_DIR_USER"
+    mkdir -p "$APPLICATIONS_DIR_USER"
+    
+    # Install main scripts (only if not system install)
+    if [[ "$IS_SYSTEM_INSTALL" = false ]]; then
+        cp "$SOURCE_ROOT/scripts/hyprland-undercover" "$SCRIPTS_DIR_USER/"
+        chmod +x "$SCRIPTS_DIR_USER/hyprland-undercover"
+        
+        cp "$SOURCE_ROOT/scripts/hyprland-undercover-settings" "$SCRIPTS_DIR_USER/"
+        chmod +x "$SCRIPTS_DIR_USER/hyprland-undercover-settings"
+        
+        msg "Installed scripts to $SCRIPTS_DIR_USER"
+    else
+        msg "System install detected. Scripts should be in /usr/bin/"
+    fi
+    
+    # Create launcher helper script
+    cat > "$SCRIPTS_DIR_USER/hyprland-undercover-launcher" << 'LAUNCHER_EOF'
+#!/bin/bash
+# Helper script to launch the appropriate menu (rofi or wofi)
+if command -v rofi &>/dev/null; then
+    rofi -show drun
+elif command -v wofi &>/dev/null; then
+    wofi --show drun
+else
+    notify-send "Error" "No launcher found (rofi or wofi)"
+fi
+LAUNCHER_EOF
+    chmod +x "$SCRIPTS_DIR_USER/hyprland-undercover-launcher"
+    
+    # Copy configuration files
+    mkdir -p "$CONFIG_DIR_USER"
+    cp -r "$SOURCE_ROOT/configs"/* "$CONFIG_DIR_USER/" 2>/dev/null || true
+    
+    # Install .desktop files
+    if [[ -f "$SOURCE_ROOT/assets/hyprland-undercover.desktop" ]]; then
+        cp "$SOURCE_ROOT/assets/hyprland-undercover.desktop" "$APPLICATIONS_DIR_USER/"
+    else
+        # Create desktop file
+        cat > "$APPLICATIONS_DIR_USER/hyprland-undercover.desktop" << 'DESKTOP_EOF'
+[Desktop Entry]
+Name=Hyprland Undercover
+Comment=Transform your Hyprland desktop into Windows 11
+Exec=hyprland-undercover
+Icon=preferences-desktop-theme
+Terminal=false
+Type=Application
+Categories=Utility;Settings;
+Keywords=windows;theme;undercover;hyprland;
+DESKTOP_EOF
+    fi
+    
+    # Create settings app desktop file
+    cat > "$APPLICATIONS_DIR_USER/hyprland-undercover-settings.desktop" << 'SETTINGS_EOF'
+[Desktop Entry]
+Name=Hyprland Undercover Settings
+Comment=Configure Hyprland Undercover
+Exec=hyprland-undercover-settings
+Icon=preferences-system
+Terminal=false
+Type=Application
+Categories=Settings;
+SETTINGS_EOF
+    
+    # Create default settings file
+    if [[ ! -f "$CONFIG_DIR_USER/settings.conf" ]]; then
+        cat > "$CONFIG_DIR_USER/settings.conf" << 'SETTINGS_CONF_EOF'
+# Hyprland Undercover Settings
+THEME_MODE="dark"
+SETTINGS_CONF_EOF
+    fi
+    
+    msg "Core files installed."
+}
+
+# 5. Update PATH
+update_path() {
+    local shell_rc=""
+    
+    if [[ -n "${BASH_VERSION:-}" ]]; then
+        shell_rc="$HOME/.bashrc"
+    elif [[ -n "${ZSH_VERSION:-}" ]]; then
+        shell_rc="$HOME/.zshrc"
+    fi
+    
+    if [[ -n "$shell_rc" ]] && [[ -f "$shell_rc" ]]; then
+        if ! grep -q 'PATH.*\.local/bin' "$shell_rc"; then
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$shell_rc"
+            msg "Added ~/.local/bin to PATH in $shell_rc"
+        fi
+    fi
+    
+    # Also add to current session
+    export PATH="$HOME/.local/bin:$PATH"
+}
+
+# --- Main Execution ---
+
+main() {
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║            $SCRIPT_NAME                     ║"
+    echo "║  Author: John Varghese (@cyber__trinity)                     ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    
+    # Check if running on Hyprland
+    if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && ! command_exists hyprctl; then
+        warn "Hyprland not detected. This tool is designed for Hyprland."
+        warn "Installation will continue, but toggle may not work properly."
+    fi
+    
+    install_dependencies
+    install_themes
+    install_wallpaper
+    install_core_files
+    update_path
+    
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════════╗"
+    echo "║                   Installation Complete!                      ║"
+    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "To apply the Windows 11 theme, run:"
+    echo "  hyprland-undercover"
+    echo ""
+    echo "Or search for 'Hyprland Undercover' in your application menu."
+    echo ""
+    echo "You may need to log out and back in for PATH changes to take effect."
+    echo ""
+}
+
+main "$@"

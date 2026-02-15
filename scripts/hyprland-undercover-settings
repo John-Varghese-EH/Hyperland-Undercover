@@ -223,8 +223,13 @@ class MainWindow(Adw.ApplicationWindow):
         """Re-apply current settings."""
         if self.check_status():
             # Disable and re-enable to force refresh
-            subprocess.Popen([SCRIPT_PATH, "--disable"])
-            GLib.timeout_add(1000, lambda: subprocess.Popen([SCRIPT_PATH, "--enable"]))
+            try:
+                subprocess.run([SCRIPT_PATH, "--disable"], check=False, timeout=10)
+                subprocess.run([SCRIPT_PATH, "--enable"], check=False, timeout=10)
+            except subprocess.TimeoutExpired:
+                print("Error: Script timeout during re-apply")
+            except Exception as e:
+                print(f"Error re-applying settings: {e}")
         else:
             print("Enable Windows mode first.")
 
@@ -270,7 +275,10 @@ class MainWindow(Adw.ApplicationWindow):
     def run_script(self):
         """Run the toggle script."""
         try:
-            subprocess.Popen([SCRIPT_PATH])
+            # Use subprocess.run with a reasonable timeout to avoid zombie processes
+            subprocess.run([SCRIPT_PATH], check=False, timeout=30)
+        except subprocess.TimeoutExpired:
+            print("Error: Script timeout during toggle")
         except Exception as e:
             print(f"Error running script: {e}")
 

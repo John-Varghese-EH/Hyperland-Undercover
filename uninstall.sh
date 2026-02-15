@@ -6,19 +6,27 @@
 
 set -euo pipefail
 
+# Get script directory for sourcing common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source common functions
+if [[ -f "$SCRIPT_DIR/scripts/common.sh" ]]; then
+    # shellcheck source=scripts/common.sh
+    source "$SCRIPT_DIR/scripts/common.sh"
+elif [[ -f "/usr/share/hyprland-undercover/scripts/common.sh" ]]; then
+    # shellcheck source=common.sh
+    source "/usr/share/hyprland-undercover/scripts/common.sh"
+else
+    # Fallback: define functions inline if common.sh not found
+    msg() { echo "✔  $1"; }
+    warn() { echo "⚠  $1" >&2; }
+fi
+
 CONFIG_DIR="$HOME/.config/hyprland-undercover"
 STATE_FILE="$CONFIG_DIR/state"
 SCRIPTS_DIR="$HOME/.local/bin"
 APPLICATIONS_DIR="$HOME/.local/share/applications"
 BACKGROUNDS_DIR="$HOME/.local/share/backgrounds/hyprland-undercover"
-
-msg() {
-    echo "✔  $1"
-}
-
-warn() {
-    echo "⚠  $1" >&2
-}
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
@@ -72,9 +80,13 @@ read -p "Remove installed themes (Fluent, Bibata)? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     msg "Removing themes..."
-    rm -rf "$HOME/.themes/Fluent"*
-    rm -rf "$HOME/.icons/Fluent"*
-    rm -rf "$HOME/.icons/Bibata"*
+    # Remove all Fluent and Bibata themes if directories exist
+    [[ -d "$HOME/.themes" ]] && find "$HOME/.themes" -maxdepth 1 \
+        \( -name "Fluent*" -o -name "Bibata*" \) \
+        -exec rm -rf {} + 2>/dev/null || true
+    [[ -d "$HOME/.icons" ]] && find "$HOME/.icons" -maxdepth 1 \
+        \( -name "Fluent*" -o -name "Bibata*" \) \
+        -exec rm -rf {} + 2>/dev/null || true
     msg "Themes removed."
 else
     msg "Themes preserved."
@@ -86,8 +98,9 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     HYPR_CONF="$HOME/.config/hypr/hyprland.conf"
     if [[ -f "$HYPR_CONF" ]]; then
-        sed -i '/# Hyprland Undercover - Windows Mode/d' "$HYPR_CONF"
-        sed -i '/hyprland-undercover\/windows-mode.conf/d' "$HYPR_CONF"
+        # Remove both Windows mode lines in a single sed pass
+        sed -i -e '/# Hyprland Undercover - Windows Mode/d' \
+               -e '/hyprland-undercover\/windows-mode.conf/d' "$HYPR_CONF"
         msg "Hyprland config cleaned."
     fi
 fi

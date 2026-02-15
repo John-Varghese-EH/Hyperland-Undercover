@@ -6,6 +6,24 @@
 
 set -euo pipefail
 
+# Get script directory for sourcing common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source common functions
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    # shellcheck source=common.sh
+    source "$SCRIPT_DIR/common.sh"
+elif [[ -f "/usr/share/hyprland-undercover/scripts/common.sh" ]]; then
+    # shellcheck source=common.sh
+    source "/usr/share/hyprland-undercover/scripts/common.sh"
+else
+    # Fallback: define functions inline if common.sh not found
+    msg() { echo "✔  $1"; }
+    error() { echo "✖  $1" >&2; exit 1; }
+    warn() { echo "⚠  $1" >&2; }
+    command_exists() { command -v "$1" &>/dev/null; }
+fi
+
 # --- Configuration ---
 SCRIPT_NAME="Hyprland Undercover Installer"
 TEMP_DIR="/tmp/hyprland-undercover-build"
@@ -31,25 +49,6 @@ else
     IS_SYSTEM_INSTALL=false
 fi
 
-# --- Helper Functions ---
-
-msg() {
-    echo "✔  $1"
-}
-
-error() {
-    echo "✖  $1" >&2
-    exit 1
-}
-
-warn() {
-    echo "⚠  $1" >&2
-}
-
-command_exists() {
-    command -v "$1" &>/dev/null
-}
-
 # Safely clone or update a repo
 git_clone_or_update() {
     local repo_url="$1"
@@ -68,19 +67,23 @@ git_clone_or_update() {
 install_dependencies() {
     msg "Checking and installing dependencies..."
     
+    # Common packages across all distributions
+    local packages=(git waybar rofi jq sassc make gettext curl wget)
+    
+    # Distribution-specific packages
     if command_exists apt; then
         sudo apt update
-        sudo apt install -y git waybar rofi jq sassc libglib2.0-dev make gettext \
-            fonts-font-awesome python3-gi gir1.2-gtk-4.0 curl wget
+        sudo apt install -y "${packages[@]}" libglib2.0-dev \
+            fonts-font-awesome python3-gi gir1.2-gtk-4.0
     elif command_exists pacman; then
-        sudo pacman -Syu --noconfirm --needed git waybar rofi jq sassc glib2 make gettext \
-            ttf-font-awesome python-gobject gtk4 curl wget
+        sudo pacman -Syu --noconfirm --needed "${packages[@]}" glib2 \
+            ttf-font-awesome python-gobject gtk4
     elif command_exists dnf; then
-        sudo dnf install -y git waybar rofi jq sassc glib2-devel make gettext \
-            fontawesome-fonts python3-gobject gtk4 curl wget
+        sudo dnf install -y "${packages[@]}" glib2-devel \
+            fontawesome-fonts python3-gobject gtk4
     elif command_exists zypper; then
-        sudo zypper install -y git waybar rofi jq sassc glib2-devel make gettext \
-            fontawesome-fonts python3-gobject gtk4 curl wget
+        sudo zypper install -y "${packages[@]}" glib2-devel \
+            fontawesome-fonts python3-gobject gtk4
     else
         warn "Unsupported package manager. Please install dependencies manually:"
         warn "git, waybar, rofi (or wofi), jq, sassc, python3-gi, gtk4"
@@ -97,8 +100,7 @@ install_themes() {
     cd "$TEMP_DIR"
     
     # Create theme directories
-    mkdir -p "$THEME_DIR_USER"
-    mkdir -p "$ICONS_DIR_USER"
+    mkdir -p "$THEME_DIR_USER" "$ICONS_DIR_USER"
     
     # Install Fluent GTK Theme
     msg "Installing Fluent GTK theme..."
@@ -119,8 +121,11 @@ install_themes() {
     # Install Bibata Cursor Theme
     msg "Installing Bibata cursor theme..."
     if [[ ! -d "$ICONS_DIR_USER/Bibata-Modern-Ice" ]]; then
-        curl -L "$BIBATA_CURSOR_URL" -o bibata.tar.xz
-        tar -xf bibata.tar.xz -C "$ICONS_DIR_USER/"
+        if curl -L "$BIBATA_CURSOR_URL" -o bibata.tar.xz; then
+            tar -xf bibata.tar.xz -C "$ICONS_DIR_USER/"
+        else
+            warn "Failed to download Bibata cursor theme"
+        fi
     fi
     
     msg "Themes and icons installed."

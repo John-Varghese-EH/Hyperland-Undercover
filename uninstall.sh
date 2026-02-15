@@ -80,8 +80,11 @@ read -p "Remove installed themes (Fluent, Bibata)? (y/N): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     msg "Removing themes..."
-    # Remove all Fluent and Bibata themes in one find command
-    find "$HOME/.themes" "$HOME/.icons" -maxdepth 1 \
+    # Remove all Fluent and Bibata themes if directories exist
+    [[ -d "$HOME/.themes" ]] && find "$HOME/.themes" -maxdepth 1 \
+        \( -name "Fluent*" -o -name "Bibata*" \) \
+        -exec rm -rf {} + 2>/dev/null || true
+    [[ -d "$HOME/.icons" ]] && find "$HOME/.icons" -maxdepth 1 \
         \( -name "Fluent*" -o -name "Bibata*" \) \
         -exec rm -rf {} + 2>/dev/null || true
     msg "Themes removed."

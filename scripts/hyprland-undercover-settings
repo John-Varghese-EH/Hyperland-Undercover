@@ -63,9 +63,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_title("Hyprland Undercover Settings")
         self.set_default_size(450, 400)
         
-        # Cache initial status
-        self._status_cache = None
-        
         # Main container
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.set_content(main_box)
@@ -187,16 +184,9 @@ class MainWindow(Adw.ApplicationWindow):
         about_row.set_subtitle_lines(2)
         about_group.add(about_row)
 
-    def check_status(self, use_cache=False) -> bool:
+    def check_status(self) -> bool:
         """Check if Windows mode is currently active."""
-        if use_cache and self._status_cache is not None:
-            return self._status_cache
-        self._status_cache = STATE_FILE.exists()
-        return self._status_cache
-    
-    def invalidate_status_cache(self):
-        """Invalidate the status cache to force a fresh check."""
-        self._status_cache = None
+        return STATE_FILE.exists()
 
     def get_status_text(self) -> str:
         """Get human-readable status text."""
@@ -206,7 +196,6 @@ class MainWindow(Adw.ApplicationWindow):
 
     def update_status_display(self):
         """Update the status indicator."""
-        self.invalidate_status_cache()
         is_active = self.check_status()
         self.status_row.set_subtitle(self.get_status_text())
 

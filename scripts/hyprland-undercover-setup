@@ -67,18 +67,8 @@ git_clone_or_update() {
 install_dependencies() {
     msg "Checking and installing dependencies..."
     
-    # Common package names across distributions
-    local -A packages=(
-        ["git"]="git"
-        ["waybar"]="waybar"
-        ["rofi"]="rofi"
-        ["jq"]="jq"
-        ["sassc"]="sassc"
-        ["make"]="make"
-        ["gettext"]="gettext"
-        ["curl"]="curl"
-        ["wget"]="wget"
-    )
+    # Common packages across all distributions
+    local packages=(git waybar rofi jq sassc make gettext curl wget)
     
     # Distribution-specific packages
     if command_exists apt; then

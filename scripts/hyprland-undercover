@@ -6,6 +6,24 @@
 
 set -euo pipefail
 
+# Get script directory for sourcing common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source common functions
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    # shellcheck source=common.sh
+    source "$SCRIPT_DIR/common.sh"
+elif [[ -f "/usr/share/hyprland-undercover/scripts/common.sh" ]]; then
+    # shellcheck source=common.sh
+    source "/usr/share/hyprland-undercover/scripts/common.sh"
+else
+    # Fallback: define functions inline if common.sh not found
+    msg() { echo "✔  $1"; }
+    error() { echo "✖  $1" >&2; exit 1; }
+    warn() { echo "⚠  $1" >&2; }
+    command_exists() { command -v "$1" &>/dev/null; }
+fi
+
 # Configuration
 CONFIG_DIR="$HOME/.config/hyprland-undercover"
 STATE_FILE="$CONFIG_DIR/state"
@@ -46,20 +64,6 @@ if [[ -f "$SETTINGS_FILE" ]]; then
     # shellcheck source=/dev/null
     source "$SETTINGS_FILE"
 fi
-
-# Helper functions
-msg() {
-    echo "✔  $1"
-}
-
-error() {
-    echo "✖  $1" >&2
-    exit 1
-}
-
-warn() {
-    echo "⚠  $1" >&2
-}
 
 # Detect which launcher is installed (rofi or wofi)
 detect_launcher() {
@@ -193,19 +197,17 @@ switch_to_windows() {
         msg "Applied GTK themes"
     fi
     
-    # Apply wallpaper using hyprctl (hyprpaper or swww)
+    # Apply wallpaper using swww or hyprpaper
     if [[ -n "$WALLPAPER_PATH" ]]; then
-        if command -v hyprctl &>/dev/null; then
-            # Try swww first (more common)
-            if command -v swww &>/dev/null; then
-                swww img "$WALLPAPER_PATH" --transition-type fade 2>/dev/null || true
-                msg "Applied wallpaper via swww"
-            # Fall back to hyprpaper
-            elif command -v hyprpaper &>/dev/null; then
-                hyprctl hyprpaper preload "$WALLPAPER_PATH" 2>/dev/null || true
-                hyprctl hyprpaper wallpaper ",$WALLPAPER_PATH" 2>/dev/null || true
-                msg "Applied wallpaper via hyprpaper"
-            fi
+        # Try swww first (more common)
+        if command -v swww &>/dev/null; then
+            swww img "$WALLPAPER_PATH" --transition-type fade 2>/dev/null || true
+            msg "Applied wallpaper via swww"
+        # Fall back to hyprpaper
+        elif command -v hyprpaper &>/dev/null && command -v hyprctl &>/dev/null; then
+            hyprctl hyprpaper preload "$WALLPAPER_PATH" 2>/dev/null || true
+            hyprctl hyprpaper wallpaper ",$WALLPAPER_PATH" 2>/dev/null || true
+            msg "Applied wallpaper via hyprpaper"
         fi
     fi
     
@@ -233,9 +235,9 @@ switch_to_hyprland() {
     # Restore Hyprland config (remove the source line)
     local hypr_conf="$HOME/.config/hypr/hyprland.conf"
     if [[ -f "$hypr_conf" ]]; then
-        # Remove the Windows mode source line
-        sed -i '/# Hyprland Undercover - Windows Mode/d' "$hypr_conf"
-        sed -i '/hyprland-undercover\/windows-mode.conf/d' "$hypr_conf"
+        # Remove both Windows mode lines in a single sed pass
+        sed -i -e '/# Hyprland Undercover - Windows Mode/d' \
+               -e '/hyprland-undercover\/windows-mode.conf/d' "$hypr_conf"
         msg "Removed Windows mode from hyprland.conf"
     fi
     
